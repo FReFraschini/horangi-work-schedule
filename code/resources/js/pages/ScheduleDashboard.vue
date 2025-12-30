@@ -1,70 +1,96 @@
 <template>
-  <div>
-    <h1>Dashboard Pianificazione Turni</h1>
-    
-    <div class="date-picker">
-      <button @click="changeWeek(-1)">&lt; Settimana Precedente</button>
-      <span>{{ weekDisplay }}</span>
-      <button @click="changeWeek(1)">Settimana Successiva &gt;</button>
-    </div>
+  <v-container fluid>
+    <v-row>
+      <v-col>
+        <h1 class="text-h4">Dashboard Pianificazione Turni</h1>
+      </v-col>
+    </v-row>
 
-    <table>
+    <v-row align="center" justify="center">
+      <v-col cols="auto">
+        <v-btn icon @click="changeWeek(-1)">
+          <v-icon>mdi-chevron-left</v-icon>
+        </v-btn>
+      </v-col>
+      <v-col cols="auto">
+        <span class="text-h6">{{ weekDisplay }}</span>
+      </v-col>
+      <v-col cols="auto">
+        <v-btn icon @click="changeWeek(1)">
+          <v-icon>mdi-chevron-right</v-icon>
+        </v-btn>
+      </v-col>
+    </v-row>
+
+    <v-table>
       <thead>
         <tr>
-          <th>Operatore</th>
-          <th v-for="day in weekDays" :key="day.date">{{ day.name }} <br> {{ day.date }}</th>
+          <th class="text-left">Operatore</th>
+          <th v-for="day in weekDays" :key="day.date" class="text-center">
+            {{ day.name }} <br> {{ day.date }}
+          </th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="operator in operators" :key="operator.id">
           <td>{{ operator.name }}</td>
-          <td v-for="day in weekDays" :key="day.date" @click="openShiftModal(null, operator, day.date)">
-            <div v-for="shift in getShiftsForOperatorAndDay(operator.id, day.date)" :key="shift.id" class="shift" @click.stop="openShiftModal(shift, operator, day.date)">
+          <td v-for="day in weekDays" :key="day.date" class="text-center">
+            <div v-for="shift in getShiftsForOperatorAndDay(operator.id, day.date)" :key="shift.id" class="shift" @click="openShiftModal(shift, operator, day.date)">
               {{ formatTime(shift.start_time) }} - {{ formatTime(shift.end_time) }}
             </div>
+            <v-btn icon size="x-small" @click="openShiftModal(null, operator, day.date)">
+              <v-icon>mdi-plus</v-icon>
+            </v-btn>
           </td>
         </tr>
       </tbody>
-    </table>
+    </v-table>
 
-    <div class="totals">
-      <h2>Totalizzatori ({{ weekDisplay }})</h2>
-      <div v-for="total in totals.hours_per_operator" :key="total.user_id">
-        <strong>{{ total.name }}:</strong> {{ total.total_hours }} / {{ total.weekly_hours }} ore
-      </div>
-    </div>
+    <v-row>
+      <v-col>
+        <h2 class="text-h5 mt-4">Totalizzatori ({{ weekDisplay }})</h2>
+        <v-list>
+          <v-list-item v-for="total in totals.hours_per_operator" :key="total.user_id" :title="`${total.name}: ${total.total_hours} / ${total.weekly_hours} ore`"></v-list-item>
+        </v-list>
+      </v-col>
+    </v-row>
 
-    <div class="requests">
-      <h2>Richieste di Indisponibilità</h2>
-      <ul>
-        <li v-for="request in requests" :key="request.id">
-          {{ request.user.name }} - {{ request.date }} ({{ request.preference }}) - Stato: {{ request.status }}
-          <button v-if="request.status === 'in attesa'" @click="updateRequestStatus(request, 'approvata')">Approva</button>
-          <button v-if="request.status === 'in attesa'" @click="updateRequestStatus(request, 'rifiutata')">Rifiuta</button>
-        </li>
-      </ul>
-    </div>
+    <v-row>
+      <v-col>
+        <h2 class="text-h5 mt-4">Richieste di Indisponibilità</h2>
+        <v-list>
+          <v-list-item v-for="request in requests" :key="request.id" :title="`${request.user.name} - ${request.date} (${request.preference}) - Stato: ${request.status}`">
+            <template v-slot:append>
+              <div v-if="request.status === 'in attesa'">
+                <v-btn size="small" @click="updateRequestStatus(request, 'approvata')">Approva</v-btn>
+                <v-btn size="small" @click="updateRequestStatus(request, 'rifiutata')">Rifiuta</v-btn>
+              </div>
+            </template>
+          </v-list-item>
+        </v-list>
+      </v-col>
+    </v-row>
 
-    <!-- Shift Modal -->
-    <div v-if="showModal" class="modal">
-      <div class="modal-content">
-        <span class="close" @click="closeShiftModal">&times;</span>
-        <h2>{{ modalShift.id ? 'Modifica Turno' : 'Nuovo Turno' }}</h2>
-        <p><strong>Operatore:</strong> {{ selectedOperator.name }}</p>
-        <p><strong>Data:</strong> {{ selectedDate }}</p>
-        <div>
-          <label>Ora Inizio:</label>
-          <input type="time" v-model="modalShift.start_time">
-        </div>
-        <div>
-          <label>Ora Fine:</label>
-          <input type="time" v-model="modalShift.end_time">
-        </div>
-        <button @click="saveShift">Salva</button>
-        <button v-if="modalShift.id" @click="deleteShift" class="delete">Elimina</button>
-      </div>
-    </div>
-  </div>
+    <v-dialog v-model="showModal" max-width="500px">
+      <v-card>
+        <v-card-title>
+          <span class="text-h5">{{ modalShift.id ? 'Modifica Turno' : 'Nuovo Turno' }}</span>
+        </v-card-title>
+        <v-card-text>
+          <p><strong>Operatore:</strong> {{ selectedOperator.name }}</p>
+          <p><strong>Data:</strong> {{ selectedDate }}</p>
+          <v-text-field label="Ora Inizio" type="time" v-model="modalShift.start_time"></v-text-field>
+          <v-text-field label="Ora Fine" type="time" v-model="modalShift.end_time"></v-text-field>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="blue darken-1" text @click="closeShiftModal">Annulla</v-btn>
+          <v-btn color="blue darken-1" text @click="saveShift">Salva</v-btn>
+          <v-btn v-if="modalShift.id" color="red darken-1" text @click="deleteShift">Elimina</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </v-container>
 </template>
 
 <script>
@@ -84,7 +110,6 @@ export default {
     const selectedOperator = ref(null);
     const selectedDate = ref('');
 
-    // Fetching data
     const fetchData = async () => {
       const start = weekDays.value[0].date;
       const end = weekDays.value[6].date;
@@ -106,7 +131,6 @@ export default {
 
     onMounted(fetchData);
 
-    // Week navigation
     const weekDays = computed(() => {
         const startOfWeek = new Date(currentDate.value);
         startOfWeek.setDate(startOfWeek.getDate() - (startOfWeek.getDay() + 6) % 7); // Monday as start of week
@@ -123,20 +147,19 @@ export default {
     const weekDisplay = computed(() => `${weekDays.value[0].date} - ${weekDays.value[6].date}`);
     
     const changeWeek = (direction) => {
-      currentDate.value.setDate(currentDate.value.getDate() + 7 * direction);
-      fetchData();
+      const newDate = new Date(currentDate.value);
+      newDate.setDate(newDate.getDate() + 7 * direction);
+      currentDate.value = newDate;
     };
     
     watch(currentDate, fetchData, { immediate: true });
 
-    // Shift logic
     const getShiftsForOperatorAndDay = (operatorId, date) => {
       return shifts.value.filter(s => s.user_id === operatorId && s.start_time.startsWith(date));
     };
 
     const formatTime = (datetime) => new Date(datetime).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
 
-    // Modal logic
     const openShiftModal = (shift, operator, date) => {
       selectedOperator.value = operator;
       selectedDate.value = date;
@@ -185,7 +208,6 @@ export default {
         }
     };
 
-    // Request logic
     const updateRequestStatus = async (request, status) => {
         try {
             await axios.post(`/api/unavailability-requests/${request.id}/update-status`, { status });
@@ -207,10 +229,12 @@ export default {
 </script>
 
 <style scoped>
-.modal { display: block; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
-.modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; }
-.close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
-.shift { background-color: #4caf50; color: white; padding: 5px; margin-top: 5px; border-radius: 3px; cursor: pointer; }
-.delete { background-color: #f44336; color: white; }
-td { cursor: pointer; }
+.shift {
+  background-color: #4caf50;
+  color: white;
+  padding: 5px;
+  margin-top: 5px;
+  border-radius: 3px;
+  cursor: pointer;
+}
 </style>

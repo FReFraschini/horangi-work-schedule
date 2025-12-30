@@ -1,42 +1,53 @@
 <template>
-  <div>
-    <h1>La Mia Dashboard</h1>
+  <v-container>
+    <v-row>
+      <v-col>
+        <h1 class="text-h4">La Mia Dashboard</h1>
+      </v-col>
+    </v-row>
 
-    <!-- My Shifts -->
-    <div class="shifts-section">
-      <h2>I Miei Prossimi Turni</h2>
-      <ul>
-        <li v-for="shift in myShifts" :key="shift.id">
-          <strong>{{ formatDate(shift.start_time) }}:</strong> {{ formatTime(shift.start_time) }} - {{ formatTime(shift.end_time) }}
-        </li>
-      </ul>
-    </div>
+    <v-row>
+      <v-col>
+        <h2 class="text-h5">I Miei Prossimi Turni</h2>
+        <v-list>
+          <v-list-item v-for="shift in myShifts" :key="shift.id" :title="`${formatDate(shift.start_time)}: ${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}`"></v-list-item>
+        </v-list>
+      </v-col>
+    </v-row>
 
-    <!-- My Unavailability Requests -->
-    <div class="requests-section">
-      <h2>Le Mie Richieste di Indisponibilità</h2>
-      
-      <!-- Form to create a new request -->
-      <div class="new-request-form">
-        <h3>Nuova Richiesta</h3>
-        <input type="date" v-model="newRequest.date">
-        <select v-model="newRequest.preference">
-          <option value="mattina">Mattina</option>
-          <option value="pomeriggio">Pomeriggio</option>
-          <option value="tutto il giorno">Tutto il giorno</option>
-        </select>
-        <button @click="submitRequest">Invia Richiesta</button>
-        <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
-      </div>
+    <v-row>
+      <v-col>
+        <h2 class="text-h5">Le Mie Richieste di Indisponibilità</h2>
 
-      <!-- List of existing requests -->
-      <ul>
-        <li v-for="request in myRequests" :key="request.id">
-          {{ request.date }} ({{ request.preference }}) - <strong>Stato: {{ request.status }}</strong>
-        </li>
-      </ul>
-    </div>
-  </div>
+        <v-card class="mt-4">
+          <v-card-title>Nuova Richiesta</v-card-title>
+          <v-card-text>
+            <v-row>
+              <v-col cols="12" sm="6">
+                <v-text-field type="date" label="Data" v-model="newRequest.date"></v-text-field>
+              </v-col>
+              <v-col cols="12" sm="6">
+                <v-select
+                  label="Preferenza"
+                  :items="['mattina', 'pomeriggio', 'tutto il giorno']"
+                  v-model="newRequest.preference"
+                ></v-select>
+              </v-col>
+            </v-row>
+            <v-alert v-if="errorMessage" type="error" dense>{{ errorMessage }}</v-alert>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn color="primary" @click="submitRequest">Invia Richiesta</v-btn>
+          </v-card-actions>
+        </v-card>
+
+        <v-list class="mt-4">
+          <v-list-item v-for="request in myRequests" :key="request.id" :title="`${request.date} (${request.preference}) - Stato: ${request.status}`"></v-list-item>
+        </v-list>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
 <script>
@@ -94,18 +105,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.shifts-section, .requests-section {
-  margin-bottom: 30px;
-}
-.new-request-form {
-  margin-bottom: 20px;
-  padding: 15px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-}
-.error {
-  color: red;
-}
-</style>

@@ -15,6 +15,10 @@ import { createApp } from 'vue';
 
 const app = createApp({});
 
+const vuetify = Vuetify.createVuetify();
+
+app.use(vuetify);
+
 import ExampleComponent from './components/ExampleComponent.vue';
 app.component('example-component', ExampleComponent);
 
