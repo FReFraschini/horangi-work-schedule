@@ -21,5 +21,13 @@ class UserSeeder extends Seeder
             'role' => 'gestore',
             'weekly_hours' => 40,
         ]);
+
+        User::create([
+            'name' => 'Operatore',
+            'email' => 'operatore@example.com',
+            'password' => Hash::make('password'),
+            'role' => 'operatore',
+            'weekly_hours' => 40,
+        ]);
     }
 }
