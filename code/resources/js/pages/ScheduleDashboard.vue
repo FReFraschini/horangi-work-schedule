@@ -230,11 +230,19 @@ export default {
 
 <style scoped>
 .shift {
-  background-color: #4caf50;
+  background-color: #1976D2; /* primary color */
   color: white;
   padding: 5px;
   margin-top: 5px;
   border-radius: 3px;
   cursor: pointer;
+}
+
+tbody tr:nth-child(odd) {
+  background-color: #BBDEFB; /* a lighter shade of blue */
+}
+
+tbody tr:nth-child(even) {
+  background-color: #E3F2FD; /* an even lighter shade of blue */
 }
 </style>

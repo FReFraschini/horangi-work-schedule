@@ -8,9 +8,30 @@ import * as components from 'vuetify/components';
 import * as directives from 'vuetify/directives';
 import '@mdi/font/css/materialdesignicons.css';
 
+// Custom Theme
+const softBlueTheme = {
+  dark: false,
+  colors: {
+    background: '#E3F2FD',
+    surface: '#FFFFFF',
+    primary: '#1976D2',
+    secondary: '#42A5F5',
+    error: '#B00020',
+    info: '#2196F3',
+    success: '#4CAF50',
+    warning: '#FB8C00',
+  },
+};
+
 const vuetify = createVuetify({
   components,
   directives,
+  theme: {
+    defaultTheme: 'softBlueTheme',
+    themes: {
+      softBlueTheme,
+    },
+  },
 });
 
 // Import components
