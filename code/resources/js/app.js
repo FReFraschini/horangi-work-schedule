@@ -12,9 +12,9 @@ import '@mdi/font/css/materialdesignicons.css';
 const softBlueTheme = {
   dark: false,
   colors: {
-    background: '#E3F2FD',
+    background: '#F5F5F5',
     surface: '#FFFFFF',
-    primary: '#1976D2',
+    primary: '#1E88E5',
     secondary: '#42A5F5',
     error: '#B00020',
     info: '#2196F3',
@@ -30,6 +30,18 @@ const vuetify = createVuetify({
     defaultTheme: 'softBlueTheme',
     themes: {
       softBlueTheme,
+    },
+  },
+  defaults: {
+    VCard: {
+      elevation: 2,
+    },
+    VTextField: {
+      variant: 'outlined',
+      density: 'compact',
+    },
+    VBtn: {
+      color: 'primary',
     },
   },
 });

@@ -1,8 +1,10 @@
 <template>
   <v-container fluid>
-    <v-row>
+    <v-row class="mb-4">
       <v-col>
-        <h1 class="text-h4">Dashboard Pianificazione Turni</h1>
+        <v-card>
+          <v-card-title class="text-h4">Dashboard Pianificazione Turni</v-card-title>
+        </v-card>
       </v-col>
     </v-row>
 
@@ -47,27 +49,28 @@
     </v-table>
 
     <v-row>
-      <v-col>
-        <h2 class="text-h5 mt-4">Totalizzatori ({{ weekDisplay }})</h2>
-        <v-list>
-          <v-list-item v-for="total in totals.hours_per_operator" :key="total.user_id" :title="`${total.name}: ${total.total_hours} / ${total.weekly_hours} ore`"></v-list-item>
-        </v-list>
+      <v-col cols="12" md="6">
+        <v-card>
+          <v-card-title>Totalizzatori ({{ weekDisplay }})</v-card-title>
+          <v-list>
+            <v-list-item v-for="total in totals.hours_per_operator" :key="total.user_id" :title="`${total.name}: ${total.total_hours} / ${total.weekly_hours} ore`"></v-list-item>
+          </v-list>
+        </v-card>
       </v-col>
-    </v-row>
-
-    <v-row>
-      <v-col>
-        <h2 class="text-h5 mt-4">Richieste di Indisponibilità</h2>
-        <v-list>
-          <v-list-item v-for="request in requests" :key="request.id" :title="`${request.user.name} - ${request.date} (${request.preference}) - Stato: ${request.status}`">
-            <template v-slot:append>
-              <div v-if="request.status === 'in attesa'">
-                <v-btn size="small" @click="updateRequestStatus(request, 'approvata')">Approva</v-btn>
-                <v-btn size="small" @click="updateRequestStatus(request, 'rifiutata')">Rifiuta</v-btn>
-              </div>
-            </template>
-          </v-list-item>
-        </v-list>
+      <v-col cols="12" md="6">
+        <v-card>
+          <v-card-title>Richieste di Indisponibilità</v-card-title>
+          <v-list>
+            <v-list-item v-for="request in requests" :key="request.id" :title="`${request.user.name} - ${request.date} (${request.preference}) - Stato: ${request.status}`">
+              <template v-slot:append>
+                <div v-if="request.status === 'in attesa'">
+                  <v-btn size="small" @click="updateRequestStatus(request, 'approvata')">Approva</v-btn>
+                  <v-btn size="small" @click="updateRequestStatus(request, 'rifiutata')">Rifiuta</v-btn>
+                </div>
+              </template>
+            </v-list-item>
+          </v-list>
+        </v-card>
       </v-col>
     </v-row>
 
