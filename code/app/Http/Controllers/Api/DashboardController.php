@@ -31,7 +31,7 @@ class DashboardController extends Controller
             ->get()
             ->map(function ($user) {
                 $totalSeconds = $user->shifts->reduce(function ($carry, $shift) {
-                    return $carry + $shift->end_time->diffInSeconds($shift->start_time);
+                    return $carry + $shift->start_time->diffInSeconds($shift->end_time);
                 }, 0);
                 return [
                     'user_id' => $user->id,

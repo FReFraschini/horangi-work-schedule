@@ -32,6 +32,7 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
             'weekly_hours' => 'required|integer|min:0',
+            'color' => 'nullable|string|max:7',
         ]);
 
         $user = User::create([
@@ -39,6 +40,7 @@ class UserController extends Controller
             'email' => $validatedData['email'],
             'password' => Hash::make($validatedData['password']),
             'weekly_hours' => $validatedData['weekly_hours'],
+            'color' => $validatedData['color'] ?? null,
             'role' => 'operatore',
         ]);
 
@@ -66,6 +68,7 @@ class UserController extends Controller
             'email' => ['sometimes', 'required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password' => 'sometimes|nullable|string|min:8',
             'weekly_hours' => 'sometimes|required|integer|min:0',
+            'color' => 'sometimes|nullable|string|max:7',
         ]);
 
         if (isset($validatedData['password']) && $validatedData['password']) {
