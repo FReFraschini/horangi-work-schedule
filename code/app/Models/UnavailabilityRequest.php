@@ -14,10 +14,13 @@ class UnavailabilityRequest extends Model
         'date',
         'preference',
         'status',
+        'note',
+        'archived',
     ];
 
     protected $casts = [
-        'date' => 'date',
+        'date'     => 'date:Y-m-d',
+        'archived' => 'boolean',
     ];
 
     public function user()

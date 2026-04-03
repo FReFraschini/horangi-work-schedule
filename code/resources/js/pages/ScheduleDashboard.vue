@@ -12,7 +12,6 @@
     <v-tabs v-model="activeTab" color="primary" class="mb-5">
       <v-tab value="turni" prepend-icon="mdi-calendar-month">Turni</v-tab>
       <v-tab value="operatori" prepend-icon="mdi-account-group">Operatori</v-tab>
-      <v-tab value="assenze" prepend-icon="mdi-calendar-remove">Assenze</v-tab>
       <v-tab value="richieste" prepend-icon="mdi-bell-outline">
         Richieste
         <v-badge v-if="pendingCount > 0" :content="pendingCount" color="warning" inline class="ml-1"></v-badge>
@@ -95,7 +94,30 @@
                     >
                       {{ formatTime(shift.start_time) }}&thinsp;&ndash;&thinsp;{{ formatTime(shift.end_time) }}
                     </div>
+                    <div
+                      v-for="abs in getAbsences(op.id, day.date)"
+                      :key="`abs-${abs.id}`"
+                      class="shift-chip"
+                      :style="{ backgroundColor: absenceTypeHex(abs.type), opacity: 0.85 }"
+                      @click="openAbsenceChip(abs, op, day.date)"
+                    >
+                      <v-icon size="10" class="mr-1" style="vertical-align:middle">mdi-calendar-remove</v-icon>{{ absenceTypeLabel(abs.type) }}
+                    </div>
+                    <div class="request-icons">
+                      <v-tooltip v-for="req in getRequests(op.id, day.date)" :key="`req-${req.id}`" location="top" max-width="220">
+                        <template #activator="{ props }">
+                          <v-icon v-bind="props" size="13" :color="requestStatusColor(req.status)" style="cursor:default;">mdi-alert-circle</v-icon>
+                        </template>
+                        <div class="text-caption">
+                          <div><strong>Richiesta indisponibilità</strong></div>
+                          <div>Preferenza: {{ req.preference }}</div>
+                          <div>Stato: {{ req.status }}</div>
+                        </div>
+                      </v-tooltip>
+                    </div>
+
                     <v-btn
+                      v-if="getAbsences(op.id, day.date).length === 0"
                       icon
                       size="x-small"
                       variant="text"
@@ -187,62 +209,6 @@
         </v-row>
       </v-tabs-window-item>
 
-      <!-- ==================== ASSENZE ==================== -->
-      <v-tabs-window-item value="assenze">
-        <div class="d-flex align-center flex-wrap gap-2 mb-4">
-          <v-btn icon variant="text" @click="changeWeek(-1)"><v-icon>mdi-chevron-left</v-icon></v-btn>
-          <span class="text-subtitle-1 font-weight-medium">{{ weekDisplay }}</span>
-          <v-btn icon variant="text" @click="changeWeek(1)"><v-icon>mdi-chevron-right</v-icon></v-btn>
-          <v-spacer></v-spacer>
-          <v-btn color="primary" prepend-icon="mdi-plus" elevation="0" @click="openAbsenceDialog()">
-            Nuova assenza
-          </v-btn>
-        </div>
-
-        <v-card rounded="xl">
-          <v-table>
-            <thead>
-              <tr>
-                <th>Operatore</th>
-                <th>Data</th>
-                <th>Tipo</th>
-                <th>Note</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="abs in absences" :key="abs.id">
-                <td>
-                  <div class="d-flex align-center">
-                    <v-avatar :color="getOperatorColor(abs.user_id)" size="24" class="mr-2">
-                      <span class="text-caption" style="color:white; font-size:10px;">{{ abs.user?.name?.charAt(0)?.toUpperCase() }}</span>
-                    </v-avatar>
-                    {{ abs.user?.name }}
-                  </div>
-                </td>
-                <td class="text-body-2">{{ abs.date }}</td>
-                <td>
-                  <v-chip size="small" :color="absenceTypeColor(abs.type)" variant="tonal">
-                    {{ absenceTypeLabel(abs.type) }}
-                  </v-chip>
-                </td>
-                <td class="text-body-2 text-medium-emphasis">{{ abs.note || '—' }}</td>
-                <td>
-                  <v-btn icon size="small" variant="text" color="error" @click="confirmDeleteAbsence(abs)">
-                    <v-icon size="18">mdi-delete-outline</v-icon>
-                  </v-btn>
-                </td>
-              </tr>
-              <tr v-if="!absences.length">
-                <td colspan="5" class="text-center text-medium-emphasis pa-6">
-                  Nessuna assenza registrata per questa settimana
-                </td>
-              </tr>
-            </tbody>
-          </v-table>
-        </v-card>
-      </v-tabs-window-item>
-
       <!-- ==================== RICHIESTE ==================== -->
       <v-tabs-window-item value="richieste">
 
@@ -291,6 +257,7 @@
                 <th>Operatore</th>
                 <th>Data</th>
                 <th>Preferenza</th>
+                <th>Note</th>
                 <th>Stato</th>
                 <th class="text-center">Azioni</th>
               </tr>
@@ -307,8 +274,9 @@
                     <span class="text-body-2">{{ req.user?.name }}</span>
                   </div>
                 </td>
-                <td class="text-body-2">{{ req.date }}</td>
+                <td class="text-body-2">{{ new Date(String(req.date).substring(0,10)).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' }) }}</td>
                 <td class="text-body-2">{{ req.preference }}</td>
+                <td class="text-body-2 text-medium-emphasis">{{ req.note || '—' }}</td>
                 <td>
                   <v-chip
                     size="small"
@@ -345,7 +313,7 @@
     <v-dialog v-model="shiftDialog" max-width="420" rounded="xl">
       <v-card rounded="xl">
         <v-card-title class="pa-5 pb-2">
-          {{ editingShift.id ? 'Modifica turno' : 'Nuovo turno' }}
+          {{ editingShift.id || editingShift.absence_id ? (editingShift.mode === 'assenza' ? 'Modifica assenza' : 'Modifica turno') : 'Nuovo turno / assenza' }}
         </v-card-title>
         <v-card-text class="px-5 pb-2">
           <div class="d-flex align-center mb-4">
@@ -359,18 +327,47 @@
               <div class="text-caption text-medium-emphasis">{{ editingShiftDate }}</div>
             </div>
           </div>
-          <v-row dense>
-            <v-col cols="6">
-              <v-text-field label="Ora inizio" type="time" v-model="editingShift.start_time"></v-text-field>
-            </v-col>
-            <v-col cols="6">
-              <v-text-field label="Ora fine" type="time" v-model="editingShift.end_time"></v-text-field>
-            </v-col>
-          </v-row>
+          <v-btn-toggle v-model="editingShift.mode" mandatory density="compact" rounded="lg" class="mb-4 w-100" color="primary">
+            <v-btn value="turno" size="small" class="flex-grow-1">
+              <v-icon start size="15">mdi-clock-outline</v-icon>Turno
+            </v-btn>
+            <v-btn value="assenza" size="small" class="flex-grow-1">
+              <v-icon start size="15">mdi-calendar-remove</v-icon>Assenza
+            </v-btn>
+          </v-btn-toggle>
+
+          <template v-if="editingShift.mode === 'turno'">
+            <v-row dense>
+              <v-col cols="6">
+                <v-text-field label="Ora inizio" type="time" v-model="editingShift.start_time" min="06:00" max="22:00"></v-text-field>
+              </v-col>
+              <v-col cols="6">
+                <v-text-field label="Ora fine" type="time" v-model="editingShift.end_time" :min="editingShift.start_time" :max="shiftEndMax"></v-text-field>
+              </v-col>
+            </v-row>
+          </template>
+
+          <template v-if="editingShift.mode === 'assenza'">
+            <v-select
+              label="Tipo assenza"
+              :items="absenceTypes"
+              item-title="label"
+              item-value="value"
+              v-model="editingShift.absence_type"
+              prepend-inner-icon="mdi-tag-outline"
+              class="mb-3"
+            ></v-select>
+            <v-text-field
+              label="Note (opzionale)"
+              v-model="editingShift.absence_note"
+              prepend-inner-icon="mdi-note-text-outline"
+            ></v-text-field>
+          </template>
+
           <v-alert v-if="shiftError" type="error" density="compact" class="mt-2">{{ shiftError }}</v-alert>
         </v-card-text>
         <v-card-actions class="px-5 pb-4">
-          <v-btn v-if="editingShift.id" color="error" variant="text" size="small" @click="deleteShift">
+          <v-btn v-if="editingShift.id || editingShift.absence_id" color="error" variant="text" size="small" @click="deleteCurrentEntry">
             <v-icon start size="16">mdi-delete-outline</v-icon>Elimina
           </v-btn>
           <v-spacer></v-spacer>
@@ -420,41 +417,6 @@
           <v-spacer></v-spacer>
           <v-btn variant="text" @click="operatorDialog = false">Annulla</v-btn>
           <v-btn color="primary" elevation="0" @click="saveOperator">Salva</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- ==================== DIALOG ASSENZA ==================== -->
-    <v-dialog v-model="absenceDialog" max-width="420" rounded="xl">
-      <v-card rounded="xl">
-        <v-card-title class="pa-5 pb-2">Nuova assenza</v-card-title>
-        <v-card-text class="px-5 pb-2">
-          <v-select
-            label="Operatore"
-            :items="operators"
-            item-title="name"
-            item-value="id"
-            v-model="editingAbsence.user_id"
-            prepend-inner-icon="mdi-account-outline"
-            class="mb-3"
-          ></v-select>
-          <v-text-field label="Data" type="date" v-model="editingAbsence.date" prepend-inner-icon="mdi-calendar" class="mb-3"></v-text-field>
-          <v-select
-            label="Tipo assenza"
-            :items="absenceTypes"
-            item-title="label"
-            item-value="value"
-            v-model="editingAbsence.type"
-            prepend-inner-icon="mdi-tag-outline"
-            class="mb-3"
-          ></v-select>
-          <v-text-field label="Note (opzionale)" v-model="editingAbsence.note" prepend-inner-icon="mdi-note-text-outline"></v-text-field>
-          <v-alert v-if="absenceError" type="error" density="compact" class="mt-3">{{ absenceError }}</v-alert>
-        </v-card-text>
-        <v-card-actions class="px-5 pb-4">
-          <v-spacer></v-spacer>
-          <v-btn variant="text" @click="absenceDialog = false">Annulla</v-btn>
-          <v-btn color="primary" elevation="0" @click="saveAbsence">Salva</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -557,8 +519,20 @@ export default {
     const getShifts = (opId, date) =>
       shifts.value.filter(s => s.user_id === opId && s.start_time.startsWith(date));
 
-    const formatTime = (dt) =>
-      new Date(dt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+    // Estrae HH:MM direttamente dalla stringa senza conversione timezone
+    const formatTime = (dt) => {
+      const s = dt.replace('T', ' ').replace(/\.\d+Z?$/, '');
+      return s.substring(11, 16);
+    };
+
+    const getAbsences = (opId, date) =>
+      absences.value.filter(a => a.user_id === opId && String(a.date).startsWith(date));
+
+    const getRequests = (opId, date) =>
+      requests.value.filter(r => r.user_id === opId && String(r.date).startsWith(date));
+
+    const requestStatusColor = (status) =>
+      status === 'approvata' ? 'success' : status === 'rifiutata' ? 'error' : 'warning';
 
     const getDailyTotal = (date) =>
       totals.value.hours_per_day?.find(d => d.date === date)?.total_hours ?? 0;
@@ -576,27 +550,94 @@ export default {
     const editingShiftOperator = ref(null);
     const editingShiftDate = ref('');
 
+    const editingShiftAbsences = computed(() => {
+      if (!editingShiftOperator.value || !editingShiftDate.value) return [];
+      return getAbsences(editingShiftOperator.value.id, editingShiftDate.value);
+    });
+
+    const shiftEndMax = computed(() => {
+      const t = editingShift.value.start_time;
+      if (!t) return '22:00';
+      const [h, m] = t.split(':').map(Number);
+      const endH = Math.min(h + 6, 22);
+      return `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    });
+
     const openShiftDialog = (shift, op, date) => {
       shiftError.value = '';
       editingShiftOperator.value = op;
       editingShiftDate.value = date;
-      editingShift.value = shift
-        ? { id: shift.id, start_time: formatTime(shift.start_time), end_time: formatTime(shift.end_time) }
-        : { start_time: '08:00', end_time: '16:00' };
+      if (shift) {
+        editingShift.value = {
+          mode: 'turno',
+          id: shift.id,
+          start_time: formatTime(shift.start_time),
+          end_time: formatTime(shift.end_time),
+        };
+      } else {
+        const existingShifts = getShifts(op.id, date);
+        let sh = 6, sm = 0;
+        if (existingShifts.length > 0) {
+          const lastEnd = formatTime(existingShifts[existingShifts.length - 1].end_time);
+          [sh, sm] = lastEnd.split(':').map(Number);
+          // +30 minuti di pausa dal turno precedente
+          sm += 30;
+          if (sm >= 60) { sh += 1; sm -= 60; }
+        }
+        // Clamp start al range 06:00–22:00
+        if (sh < 6)  { sh = 6;  sm = 0; }
+        if (sh >= 22) { sh = 22; sm = 0; }
+        const defaultStart = `${String(sh).padStart(2, '0')}:${String(sm).padStart(2, '0')}`;
+        // Fine = start + 6h, max 22:00
+        const endH = Math.min(sh + 6, 22);
+        const defaultEnd = `${String(endH).padStart(2, '0')}:${String(sm).padStart(2, '0')}`;
+        editingShift.value = {
+          mode: 'turno',
+          start_time: defaultStart,
+          end_time: defaultEnd,
+          absence_type: 'ferie',
+          absence_note: '',
+        };
+      }
+      shiftDialog.value = true;
+    };
+
+    const openAbsenceChip = (abs, op, date) => {
+      shiftError.value = '';
+      editingShiftOperator.value = op;
+      editingShiftDate.value = date;
+      editingShift.value = {
+        mode: 'assenza',
+        absence_id: abs.id,
+        absence_type: abs.type,
+        absence_note: abs.note || '',
+      };
       shiftDialog.value = true;
     };
 
     const saveShift = async () => {
       shiftError.value = '';
-      const p = {
-        user_id:    editingShiftOperator.value.id,
-        start_time: `${editingShiftDate.value} ${editingShift.value.start_time}`,
-        end_time:   `${editingShiftDate.value} ${editingShift.value.end_time}`,
-      };
       try {
-        editingShift.value.id
-          ? await axios.put(`/api/shifts/${editingShift.value.id}`, p)
-          : await axios.post('/api/shifts', p);
+        if (editingShift.value.mode === 'assenza') {
+          const p = {
+            user_id: editingShiftOperator.value.id,
+            date:    editingShiftDate.value,
+            type:    editingShift.value.absence_type,
+            note:    editingShift.value.absence_note || '',
+          };
+          editingShift.value.absence_id
+            ? await axios.put(`/api/absences/${editingShift.value.absence_id}`, p)
+            : await axios.post('/api/absences', p);
+        } else {
+          const p = {
+            user_id:    editingShiftOperator.value.id,
+            start_time: `${editingShiftDate.value} ${editingShift.value.start_time}`,
+            end_time:   `${editingShiftDate.value} ${editingShift.value.end_time}`,
+          };
+          editingShift.value.id
+            ? await axios.put(`/api/shifts/${editingShift.value.id}`, p)
+            : await axios.post('/api/shifts', p);
+        }
         shiftDialog.value = false;
         await fetchAll();
       } catch (e) {
@@ -604,10 +645,14 @@ export default {
       }
     };
 
-    const deleteShift = async () => {
-      if (!confirm('Eliminare questo turno?')) return;
+    const deleteCurrentEntry = async () => {
+      if (!confirm('Eliminare questo elemento?')) return;
       try {
-        await axios.delete(`/api/shifts/${editingShift.value.id}`);
+        if (editingShift.value.absence_id) {
+          await axios.delete(`/api/absences/${editingShift.value.absence_id}`);
+        } else {
+          await axios.delete(`/api/shifts/${editingShift.value.id}`);
+        }
         shiftDialog.value = false;
         await fetchAll();
       } catch (e) { console.error(e); }
@@ -659,50 +704,36 @@ export default {
     };
 
     // ---- Assenze ----
-    const absenceDialog = ref(false);
-    const absenceError  = ref('');
-    const editingAbsence = ref({});
-
     const absenceTypes = [
-      { label: 'Ferie',         value: 'ferie',          color: 'success' },
-      { label: 'Permesso',      value: 'permesso',        color: 'info'    },
-      { label: 'Compensativo',  value: 'compensativo',    color: 'warning' },
-      { label: 'Altra assenza', value: 'altra_assenza',   color: 'error'   },
+      { label: 'Ferie',         value: 'ferie',          color: 'success', hex: '#43a047' },
+      { label: 'Permesso',      value: 'permesso',        color: 'info',    hex: '#1e88e5' },
+      { label: 'Compensativo',  value: 'compensativo',    color: 'warning', hex: '#fb8c00' },
+      { label: 'Altra assenza', value: 'altra_assenza',   color: 'error',   hex: '#e53935' },
     ];
 
     const absenceTypeLabel = (t) => absenceTypes.find(a => a.value === t)?.label ?? t;
     const absenceTypeColor = (t) => absenceTypes.find(a => a.value === t)?.color ?? 'default';
-
-    const openAbsenceDialog = () => {
-      absenceError.value = '';
-      editingAbsence.value = {
-        user_id: operators.value[0]?.id ?? null,
-        date:    weekDays.value[0].date,
-        type:    'ferie',
-        note:    '',
-      };
-      absenceDialog.value = true;
-    };
-
-    const saveAbsence = async () => {
-      absenceError.value = '';
-      try {
-        await axios.post('/api/absences', editingAbsence.value);
-        absenceDialog.value = false;
-        await fetchAll();
-      } catch (e) {
-        const errs = e?.response?.data?.errors;
-        absenceError.value = errs
-          ? Object.values(errs).flat().join(' ')
-          : (e?.response?.data?.message || 'Errore durante il salvataggio.');
-      }
-    };
+    const absenceTypeHex   = (t) => absenceTypes.find(a => a.value === t)?.hex   ?? '#9e9e9e';
 
     // ---- Export PDF ----
+    const hexToRgb = (hex) => {
+      const clean = (hex || '#1A73E8').replace('#', '');
+      return [
+        parseInt(clean.substring(0, 2), 16),
+        parseInt(clean.substring(2, 4), 16),
+        parseInt(clean.substring(4, 6), 16),
+      ];
+    };
+
+    const lightenRgb = ([r, g, b], amount = 0.75) => [
+      Math.round(r + (255 - r) * amount),
+      Math.round(g + (255 - g) * amount),
+      Math.round(b + (255 - b) * amount),
+    ];
+
     const exportPdf = () => {
       const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
-      // Intestazione
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
       doc.text('Turni settimanali', 14, 16);
@@ -710,26 +741,34 @@ export default {
       doc.setFont('helvetica', 'normal');
       doc.text(weekDisplay.value, 14, 23);
 
-      // Colonne: Operatore + 7 giorni
-      const head = [['Operatore', ...weekDays.value.map(d => `${d.name}\n${d.dayNum}`)]];
+      // Colonne: Operatore + 7 giorni + TOT.
+      const head = [['Operatore', ...weekDays.value.map(d => `${d.name}\n${d.dayNum}`), 'TOT.']];
 
       const body = operators.value.map(op => {
         const row = [op.name];
         weekDays.value.forEach(day => {
           const dayShifts = getShifts(op.id, day.date);
-          row.push(dayShifts.length
+          const absRow = getAbsences(op.id, day.date);
+          let cell = dayShifts.length
             ? dayShifts.map(s => `${formatTime(s.start_time)}–${formatTime(s.end_time)}`).join('\n')
-            : ''
-          );
+            : '';
+          if (absRow.length) {
+            const absLabel = absRow.map(a => absenceTypeLabel(a.type)).join(', ');
+            cell = cell ? `${cell}\n(${absLabel})` : `(${absLabel})`;
+          }
+          row.push(cell);
         });
+        const weeklyH = getOperatorWeeklyHours(op.id);
+        const targetH = op.weekly_hours;
+        row.push(`${weeklyH}h / ${targetH}h`);
         return row;
       });
 
-      // Riga totali
+      // Riga totali giornalieri
       const totalsRow = ['ORE / GIORNO', ...weekDays.value.map(d => {
         const h = getDailyTotal(d.date);
         return h > 0 ? `${h}h` : '';
-      })];
+      }), ''];
 
       autoTable(doc, {
         startY: 28,
@@ -739,24 +778,31 @@ export default {
         headStyles: { fillColor: [26, 115, 232], textColor: 255, fontStyle: 'bold' },
         bodyStyles: { valign: 'middle' },
         didParseCell(data) {
-          if (data.row.index === body.length) {
+          if (data.section === 'body' && data.row.index < operators.value.length) {
+            const op = operators.value[data.row.index];
+            const rgb = hexToRgb(op.color || '#1A73E8');
+            if (data.column.index === 0) {
+              // Colonna operatore: colore pieno
+              data.cell.styles.fillColor = rgb;
+              data.cell.styles.textColor = 255;
+            } else if (data.cell.raw) {
+              // Celle con turni: tinta leggera del colore operatore
+              data.cell.styles.fillColor = lightenRgb(rgb, 0.80);
+            }
+          }
+          if (data.section === 'body' && data.row.index === operators.value.length) {
             data.cell.styles.fillColor = [230, 234, 241];
             data.cell.styles.fontStyle = 'bold';
           }
         },
-        columnStyles: { 0: { cellWidth: 36, fontStyle: 'bold' } },
+        columnStyles: {
+          0: { cellWidth: 34, fontStyle: 'bold' },
+          [weekDays.value.length + 1]: { cellWidth: 22, fontStyle: 'bold' },
+        },
       });
 
       const filename = `turni_${weekDays.value[0].date}_${weekDays.value[6].date}.pdf`;
       doc.save(filename);
-    };
-
-    const confirmDeleteAbsence = async (abs) => {
-      if (!confirm('Eliminare questa assenza?')) return;
-      try {
-        await axios.delete(`/api/absences/${abs.id}`);
-        await fetchAll();
-      } catch (e) { console.error(e); }
     };
 
     return {
@@ -764,14 +810,13 @@ export default {
       operators, shifts, requests, absences, totals,
       requestFilter, pendingCount, filteredRequests,
       weekDays, weekDisplay, changeWeek, goToToday,
-      getShifts, formatTime, getDailyTotal, getOperatorColor, getOperatorWeeklyHours,
-      shiftDialog, shiftError, editingShift, editingShiftOperator, editingShiftDate,
-      openShiftDialog, saveShift, deleteShift,
+      getShifts, getAbsences, getRequests, requestStatusColor, formatTime, getDailyTotal, getOperatorColor, getOperatorWeeklyHours,
+      shiftDialog, shiftError, editingShift, editingShiftOperator, editingShiftDate, editingShiftAbsences, shiftEndMax,
+      openShiftDialog, openAbsenceChip, saveShift, deleteCurrentEntry,
       updateRequestStatus,
       operatorDialog, operatorError, editingOperator,
       openOperatorDialog, saveOperator, confirmDeleteOperator,
-      absenceDialog, absenceError, editingAbsence, absenceTypes,
-      absenceTypeLabel, absenceTypeColor, openAbsenceDialog, saveAbsence, confirmDeleteAbsence,
+      absenceTypes, absenceTypeLabel, absenceTypeColor, absenceTypeHex,
       exportPdf,
     };
   },
@@ -784,7 +829,15 @@ export default {
 .operator-col { min-width: 160px; white-space: nowrap; }
 .day-col      { min-width: 120px; text-align: center; padding: 8px 4px; }
 .total-col    { min-width: 90px; text-align: center; white-space: nowrap; }
-.cell         { padding: 4px 4px !important; }
+.cell         { padding: 4px 4px !important; height: 56px; position: relative; }
+
+.request-icons {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  display: flex;
+  gap: 2px;
+}
 
 .day-number {
   display: inline-flex;
@@ -819,6 +872,7 @@ export default {
   user-select: none;
 }
 .shift-chip:hover { filter: brightness(0.85); }
+
 
 .totals-row td { background-color: rgba(var(--v-theme-surface-variant), 0.5); }
 

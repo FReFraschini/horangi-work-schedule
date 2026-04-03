@@ -38,6 +38,22 @@ class AbsenceController extends Controller
         return response()->json($absence->load('user'), 201);
     }
 
+    public function update(Request $request, Absence $absence)
+    {
+        Gate::authorize('is-gestore');
+
+        $validated = $request->validate([
+            'user_id' => 'sometimes|required|exists:users,id',
+            'date'    => 'sometimes|required|date_format:Y-m-d',
+            'type'    => 'sometimes|required|in:ferie,permesso,compensativo,altra_assenza',
+            'note'    => 'nullable|string|max:255',
+        ]);
+
+        $absence->update($validated);
+
+        return response()->json($absence->load('user'));
+    }
+
     public function destroy(Absence $absence)
     {
         Gate::authorize('is-gestore');

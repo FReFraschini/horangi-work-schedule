@@ -33,3 +33,5 @@ services:
       test: ["CMD", "mysqladmin", "ping", "-p${DB_PASSWORD:-password}"]
       retries: 3
       timeout: 5s
+    user: mysql
+
