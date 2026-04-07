@@ -59,4 +59,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(UnavailabilityRequest::class);
     }
+
+    public function absences()
+    {
+        return $this->hasMany(Absence::class);
+    }
 }

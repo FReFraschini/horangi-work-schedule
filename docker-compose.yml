@@ -2,11 +2,16 @@ services:
   app:
     build:
       dockerfile: .docker/php/Dockerfile
+      target: dev
     container_name: horangi-work-schedule-app
     restart: unless-stopped
     working_dir: /var/www
     volumes:
       - ./code:/var/www
+    depends_on:
+      db:
+        condition: service_healthy
+
   nginx:
     image: nginx:alpine
     container_name: horangi-work-schedule-nginx
@@ -16,6 +21,9 @@ services:
     volumes:
       - ./code:/var/www
       - ./.docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+
   db:
     image: mysql:8.0
     container_name: horangi-work-schedule-db
@@ -31,5 +39,8 @@ services:
       - ./.data/mysql:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-p${DB_PASSWORD:-password}"]
-      retries: 3
+      retries: 5
       timeout: 5s
+      interval: 10s
+      start_period: 30s
+    user: mysql

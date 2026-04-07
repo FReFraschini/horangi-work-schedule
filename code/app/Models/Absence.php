@@ -10,7 +10,7 @@ class Absence extends Model
 
     protected function casts(): array
     {
-        return ['date' => 'date'];
+        return ['date' => 'date:Y-m-d'];
     }
 
     public function user()
