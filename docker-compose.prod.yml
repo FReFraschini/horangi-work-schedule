@@ -3,41 +3,53 @@ services:
     build:
       dockerfile: .docker/php/Dockerfile
       target: prod
-    container_name: horangi-work-schedule-app
+    container_name: horangi-app
     restart: unless-stopped
     working_dir: /var/www
     volumes:
-      - app_code:/var/www
-      - ./code/storage:/var/www/storage
-    environment:
-      APP_ENV: production
-      APP_DEBUG: false
+      - ./code:/var/www
+      - storage_data:/var/www/storage
+    env_file:
+      - ./code/.env
     depends_on:
       db:
         condition: service_healthy
 
   nginx:
     image: nginx:alpine
-    container_name: horangi-work-schedule-nginx
+    container_name: horangi-nginx
     restart: unless-stopped
     ports:
       - "80:80"
+      - "443:443"
     volumes:
-      - app_code:/var/www
-      - ./.docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./code:/var/www
+      - ./.docker/nginx/prod.conf:/etc/nginx/conf.d/default.conf
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
     depends_on:
       - app
+    # Ricarica nginx ogni 6h per aggiornare i certificati rinnovati
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+
+  certbot:
+    image: certbot/certbot
+    container_name: horangi-certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    # Rinnova automaticamente il certificato ogni 12h
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
   db:
     image: mysql:8.0
-    container_name: horangi-work-schedule-db
+    container_name: horangi-db
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD}"
       MYSQL_DATABASE: "${DB_DATABASE}"
       MYSQL_PASSWORD: "${DB_PASSWORD}"
       MYSQL_USER: "${DB_USERNAME}"
-    # porta NON esposta all'host in produzione
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
@@ -49,5 +61,5 @@ services:
     user: mysql
 
 volumes:
-  app_code:
+  storage_data:
   db_data:
