@@ -2,12 +2,16 @@ services:
   app:
     build:
       dockerfile: .docker/php/Dockerfile
-      target: dev
+      target: prod
     container_name: horangi-work-schedule-app
     restart: unless-stopped
     working_dir: /var/www
     volumes:
-      - ./code:/var/www
+      - app_code:/var/www
+      - ./code/storage:/var/www/storage
+    environment:
+      APP_ENV: production
+      APP_DEBUG: false
     depends_on:
       db:
         condition: service_healthy
@@ -17,9 +21,9 @@ services:
     container_name: horangi-work-schedule-nginx
     restart: unless-stopped
     ports:
-      - "${NGINX_PORT:-8080}:80"
+      - "80:80"
     volumes:
-      - ./code:/var/www
+      - app_code:/var/www
       - ./.docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - app
@@ -29,18 +33,21 @@ services:
     container_name: horangi-work-schedule-db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-password}"
-      MYSQL_DATABASE: "${DB_DATABASE:-horangi}"
-      MYSQL_PASSWORD: "${DB_PASSWORD:-password}"
-      MYSQL_USER: "${DB_USERNAME:-horangi}"
-    ports:
-      - "${MYSQL_PORT:-3306}:3306"
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD}"
+      MYSQL_DATABASE: "${DB_DATABASE}"
+      MYSQL_PASSWORD: "${DB_PASSWORD}"
+      MYSQL_USER: "${DB_USERNAME}"
+    # porta NON esposta all'host in produzione
     volumes:
-      - ./.data/mysql:/var/lib/mysql
+      - db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-p${DB_PASSWORD:-password}"]
+      test: ["CMD", "mysqladmin", "ping", "-p${DB_PASSWORD}"]
       retries: 5
       timeout: 5s
       interval: 10s
       start_period: 30s
     user: mysql
+
+volumes:
+  app_code:
+  db_data:

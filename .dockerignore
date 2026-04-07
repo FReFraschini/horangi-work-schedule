@@ -1,0 +1,14 @@
+.git
+.data
+.github
+node_modules
+code/node_modules
+code/vendor
+code/storage/logs/*
+code/storage/framework/cache/*
+code/storage/framework/sessions/*
+code/storage/framework/views/*
+*.log
+*.md
+.env
+code/.env
