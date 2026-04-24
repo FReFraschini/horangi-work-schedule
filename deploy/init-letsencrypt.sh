@@ -57,8 +57,9 @@ if [ "$STAGING" = "1" ]; then
   STAGING_FLAG="--staging"
 fi
 
-docker compose -f docker-compose.prod.yml run --rm certbot \
-  certonly --webroot \
+docker compose -f docker-compose.prod.yml run --rm \
+  --entrypoint "" certbot \
+  certbot certonly --webroot \
   --webroot-path=/var/www/certbot \
   $STAGING_FLAG \
   --email $EMAIL \
