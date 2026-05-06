@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'Gestione Turni') }}</title>
+    <meta name="theme-color" content="#1A73E8">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" href="/logo.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png">
+    <link rel="manifest" href="/build/manifest.webmanifest">
     <link rel="dns-prefetch" href="//fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=Google+Sans:400,500,700|Nunito:400,500,600" rel="stylesheet">
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])

@@ -1,5 +1,8 @@
 import './bootstrap';
 import { createApp } from 'vue';
+import { registerSW } from 'virtual:pwa-register';
+
+registerSW({ immediate: true });
 
 // Vuetify
 import 'vuetify/styles';

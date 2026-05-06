@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="#1A73E8"/>
+  <!-- Calendar body -->
+  <rect x="96" y="140" width="320" height="280" rx="28" ry="28" fill="white"/>
+  <!-- Calendar header strip -->
+  <rect x="96" y="140" width="320" height="80" rx="28" ry="28" fill="#1557B0"/>
+  <rect x="96" y="185" width="320" height="35" fill="#1557B0"/>
+  <!-- Header rings -->
+  <rect x="168" y="108" width="28" height="64" rx="14" fill="white"/>
+  <rect x="316" y="108" width="28" height="64" rx="14" fill="white"/>
+  <!-- Clock face (bottom right quadrant) -->
+  <circle cx="320" cy="340" r="72" fill="#1A73E8"/>
+  <circle cx="320" cy="340" r="58" fill="white"/>
+  <!-- Clock hands -->
+  <line x1="320" y1="340" x2="320" y2="298" stroke="#1A73E8" stroke-width="8" stroke-linecap="round"/>
+  <line x1="320" y1="340" x2="350" y2="355" stroke="#1A73E8" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="320" cy="340" r="6" fill="#1A73E8"/>
+  <!-- Calendar grid dots (left side) -->
+  <circle cx="152" cy="268" r="10" fill="#1A73E8"/>
+  <circle cx="196" cy="268" r="10" fill="#1A73E8"/>
+  <circle cx="240" cy="268" r="10" fill="#1A73E8"/>
+  <circle cx="152" cy="314" r="10" fill="#1A73E8"/>
+  <circle cx="196" cy="314" r="10" fill="#1A73E8"/>
+  <circle cx="240" cy="314" r="10" fill="#1A73E8"/>
+  <circle cx="152" cy="360" r="10" fill="#1A73E8"/>
+  <circle cx="196" cy="360" r="10" fill="#1A73E8"/>
+</svg>
